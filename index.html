@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Видео-мастерская</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f3;--card:#fff;--ink:#17242c;--mute:#5d6b75;--line:#d3dadf;--acc:#0f6b6b;--acc-t:#fff;--hi:#f2b134;--danger:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121a1f;--card:#1e2930;--ink:#e8edf0;--mute:#9aa8b1;--line:#32414a;--acc:#43b5ae;--acc-t:#0d1a1c;--danger:#f2877f}}
+:root[data-theme="dark"]{--bg:#121a1f;--card:#1e2930;--ink:#e8edf0;--mute:#9aa8b1;--line:#32414a;--acc:#43b5ae;--acc-t:#0d1a1c;--danger:#f2877f}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Rubik,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+main{max-width:640px;margin:0 auto;padding:16px 14px calc(96px + env(safe-area-inset-bottom,0px))}
+h1{font-size:26px;line-height:1.15;margin:6px 0 4px}
+.lead{color:var(--mute);margin:0 0 14px;font-size:15px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 10px}
+label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px}
+textarea{min-height:52px;resize:vertical}
+input[type=range]{padding:0;accent-color:var(--acc)}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:12px 14px;min-height:46px}
+button.main{background:var(--acc);color:var(--acc-t);border-color:var(--acc);font-weight:500}
+button:disabled{opacity:.5;cursor:default}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.bar>button{flex:1}
+label.btn{display:flex;align-items:center;justify-content:center;flex:1;font-size:16px;color:var(--ink);margin:0;border:1px solid var(--line);border-radius:12px;background:var(--card);min-height:46px;padding:12px 14px;cursor:pointer}
+label.btn.main{background:var(--acc);color:var(--acc-t);border-color:var(--acc);font-weight:500}
+.stage{display:flex;justify-content:center}
+canvas{display:block;max-width:100%;max-height:62vh;background:#000;border-radius:12px}
+.prog{height:6px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--acc)}
+.time{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:4px}
+.card{border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px;background:var(--bg)}
+.card.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.top{display:grid;grid-template-columns:64px 1fr;gap:10px}
+.thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;padding:0;min-height:0;background-size:cover}
+.name{font-size:14px;font-weight:500;margin:0 0 4px}
+.tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tools button{flex:0 0 auto;min-height:42px;min-width:44px;padding:8px 11px;font-size:14px}
+.step{display:flex;align-items:center;gap:4px;font-size:14px}
+.step b{min-width:46px;text-align:center}
+.sw{display:flex;gap:8px;margin-top:8px}
+.sw button{width:34px;height:34px;min-height:0;min-width:0;padding:0;border-radius:50%}
+.sw button.on{outline:3px solid var(--ink);outline-offset:1px}
+.msg{font-size:14px;color:var(--mute);margin:8px 0 0;min-height:20px}
+.empty{color:var(--mute);font-size:15px;margin:4px 0 8px}
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));z-index:5}
+.dock div{max-width:640px;margin:0 auto;display:flex;gap:8px}
+.dock button{flex:1}
+</style>
+</head>
+<body>
+<main>
+<h1>Видео-мастерская</h1>
+<p class="lead">Фото, текстовые заставки и музыка в одно видео. Всё работает в телефоне и бесплатно.</p>
+
+<section class="panel">
+<div class="stage"><canvas id="cv" width="1280" height="720"></canvas></div>
+<div class="prog"><i id="pbar"></i></div>
+<div class="time"><span id="tcur">0:00</span><span id="ttot">0:00</span></div>
+<p class="msg" id="msg"></p>
+</section>
+
+<section class="panel">
+<h2>Видео по запросу и картинке</h2>
+<label for="req">Что ты хочешь получить от видео</label>
+<textarea id="req" placeholder="Например: герой идёт по стройке на рассвете, камера медленно приближается"></textarea>
+<label for="refimg">Исходное изображение</label>
+<input id="refimg" type="file" accept="image/*">
+<div class="row">
+<div><label for="res">Разрешение</label>
+<select id="res"><option value="480">480p (лёгкое)</option><option value="720" selected>720p (HD)</option><option value="1080">1080p (Full HD)</option></select></div>
+<div><label for="qual">Чёткость</label>
+<select id="qual"><option value="2000000">Обычная</option><option value="5000000" selected>Хорошая</option><option value="10000000">Максимальная</option></select></div>
+</div>
+<label for="len">Длина видео, секунд</label>
+<input id="len" type="number" min="3" max="30" step="1" value="8">
+<label><input id="showReq" type="checkbox" style="width:auto;margin-right:8px">Показать запрос текстом на видео</label>
+<div class="bar">
+<button class="main" id="makeImg">Собрать видео из картинки</button>
+<button id="copyReq">Скопировать запрос для ИИ-сервиса</button>
+</div>
+<p class="msg">Кнопка «Собрать» делает обычное видео из твоей картинки: плавное движение камеры и длина, какую выбрал. Это не ИИ: картинка не оживает и запрос сам не исполняется. Для этого нужна ИИ-модель, её я пока не подключал.</p>
+</section>
+
+<section class="panel">
+<h2>Кадры</h2>
+<div id="list"></div>
+<div class="bar">
+<label class="btn main" for="file" id="addPhoto">+ Фото</label>
+<button id="addText">+ Заставка</button>
+</div>
+<input id="file" type="file" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+<p class="msg" id="msg2"></p>
+</section>
+
+<section class="panel">
+<h2>Настройки</h2>
+<div class="row">
+<div><label for="fmt">Формат</label>
+<select id="fmt"><option value="l">Горизонтальное 16:9</option><option value="p">Вертикальное 9:16</option></select></div>
+<div><label for="trans">Переход</label>
+<select id="trans"><option value="fade">Плавное затухание</option><option value="slide">Сдвиг</option><option value="zoom">Приближение</option><option value="none">Без перехода</option></select></div>
+</div>
+<div class="row">
+<div><label for="tlen">Длина перехода, сек</label><input id="tlen" type="number" min="0.2" max="2" step="0.1" value="0.6"></div>
+<div><label for="dur">Новый кадр, сек</label><input id="dur" type="number" min="1.5" max="20" step="0.5" value="4"></div>
+</div>
+<div class="bar"><button id="applyAll">Поставить эту длительность всем кадрам</button></div>
+<label for="music">Музыка (файл с телефона)</label>
+<input id="music" type="file" accept="audio/*">
+<label for="vol">Громкость музыки</label>
+<input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
+<div class="bar"><button id="noMusic">Убрать музыку</button></div>
+<p class="msg" id="fmtnote"></p>
+</section>
+</main>
+
+<div class="dock"><div>
+<button id="play">Смотреть</button>
+<button class="main" id="rec">Сохранить видео</button>
+</div></div>
+
+<script>
+(function(){
+function $(id){return document.getElementById(id)}
+var slides=[],cv=$('cv'),cx=cv.getContext('2d'),msg=$('msg');
+var COLORS=['#0f6b6b','#7a3b1d','#2d3a8c','#5a2d6e','#2f6b2f','#222222'];
+var audioEl=null,actx=null,adest=null,gain=null,busy=false,stopReq=false,raf=0,sel=0;
+function say(t){msg.textContent=t;var m2=$('msg2');if(m2)m2.textContent=t}
+function fmtT(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60)}
+function defDur(){return Math.max(1.5,Math.min(20,+$('dur').value||4))}
+
+/* ---------- расчёт времени ---------- */
+function timing(){
+ var n=slides.length,T=$('trans').value==='none'?0:Math.max(0.2,Math.min(2,+$('tlen').value||0.6));
+ if(n){var m=Math.min.apply(null,slides.map(function(s){return s.d}));T=Math.min(T,m/2)}
+ var st=[],t=0;
+ slides.forEach(function(s,i){st.push(t);t+=s.d-(i<n-1?T:0)});
+ return{T:T,st:st,total:n?t:0};
+}
+function updTotal(){$('ttot').textContent=fmtT(timing().total)}
+
+/* ---------- рисование ---------- */
+function wrap(text,maxW){
+ var out=[];
+ String(text).split('\n').forEach(function(par){
+  var line='';
+  par.split(' ').forEach(function(w){
+   var test=line?line+' '+w:w;
+   if(cx.measureText(test).width>maxW&&line){out.push(line);line=w}else line=test;
+  });
+  out.push(line);
+ });
+ return out;
+}
+function drawSlide(s,k,o){
+ var W=cv.width,H=cv.height;
+ cx.save();cx.globalAlpha=o.a;
+ cx.translate(o.dx||0,0);
+ if(o.sc&&o.sc!==1){cx.translate(W/2,H/2);cx.scale(o.sc,o.sc);cx.translate(-W/2,-H/2)}
+ cx.beginPath();cx.rect(0,0,W,H);cx.clip();
+ if(s.img){
+  var z=1+0.07*k,r=Math.max(W/s.img.width,H/s.img.height)*z,w=s.img.width*r,h=s.img.height*r;
+  cx.drawImage(s.img,(W-w)/2,(H-h)/2,w,h);
+ }else{cx.fillStyle=s.bg;cx.fillRect(0,0,W,H)}
+ if(s.text){
+  var fs=Math.round(W/(W>H?24:14));
+  cx.font='700 '+fs+'px Rubik,sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+  var lines=wrap(s.text,W*0.84),lh=fs*1.25,total=lines.length*lh,y0=s.img?H-total-fs*1.2:(H-total)/2;
+  if(s.img){cx.fillStyle='rgba(0,0,0,.5)';cx.fillRect(0,y0-fs*.6,W,total+fs*1.2)}
+  cx.fillStyle='#fff';cx.shadowColor='rgba(0,0,0,.6)';cx.shadowBlur=8;
+  lines.forEach(function(ln,j){cx.fillText(ln,W/2,y0+lh*j+lh/2)});
+ }
+ cx.restore();
+}
+function frameAt(t){
+ var W=cv.width,H=cv.height,n=slides.length;
+ cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+ if(!n){cx.fillStyle='#fff';cx.font='500 '+(W/28)+'px Rubik,sans-serif';cx.textAlign='center';cx.fillText('Добавь первый кадр',W/2,H/2);return}
+ var tm=timing(),i=0,j;
+ for(j=0;j<n;j++){if(tm.st[j]<=t)i=j}
+ function kOf(x){return Math.max(0,Math.min(1,(t-tm.st[x])/slides[x].d))}
+ var inT=i>0&&tm.T>0&&t<tm.st[i]+tm.T;
+ if(inT){
+  var p=(t-tm.st[i])/tm.T,ty=$('trans').value;
+  if(ty==='slide'){drawSlide(slides[i-1],kOf(i-1),{a:1,dx:-p*W*0.3});drawSlide(slides[i],kOf(i),{a:1,dx:(1-p)*W})}
+  else if(ty==='zoom'){drawSlide(slides[i-1],kOf(i-1),{a:1});drawSlide(slides[i],kOf(i),{a:p,sc:1.2-0.2*p})}
+  else{drawSlide(slides[i-1],kOf(i-1),{a:1});drawSlide(slides[i],kOf(i),{a:p})}
+ }else drawSlide(slides[i],kOf(i),{a:1});
+ var fo=0;
+ if(t<0.4)fo=1-t/0.4;else if(t>tm.total-0.4)fo=(t-(tm.total-0.4))/0.4;
+ if(fo>0){cx.globalAlpha=Math.min(1,fo);cx.fillStyle='#000';cx.fillRect(0,0,W,H);cx.globalAlpha=1}
+}
+function show(i){
+ sel=i;var tm=timing();
+ if(!slides.length){frameAt(0);return}
+ var t=tm.st[i]+Math.min(slides[i].d*0.5,Math.max(tm.T,0.5));
+ frameAt(Math.min(t,tm.total-0.01));
+ $('tcur').textContent=fmtT(t);
+}
+
+/* ---------- список кадров ---------- */
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+function list(){
+ var l=$('list');l.innerHTML='';
+ if(!slides.length)l.appendChild(el('p','empty','Пока пусто. Добавь фото или заставку.'));
+ slides.forEach(function(s,i){
+  var c=el('div','card'+(i===sel?' sel':''));
+  var top=el('div','top'),th;
+  if(s.thumb){th=el('button','thumb');th.style.backgroundImage='url('+s.thumb+')'}
+  else{th=el('button','thumb','T');th.style.background=s.bg}
+  th.setAttribute('aria-label','Показать кадр '+(i+1));
+  th.addEventListener('click',function(){show(i);list()});
+  var right=el('div');
+  right.appendChild(el('p','name',(i+1)+'. '+(s.img?'Фото':'Заставка')));
+  var t=el('textarea');t.placeholder=s.img?'Подпись на фото (по желанию)':'Текст заставки';t.value=s.text||'';
+  t.setAttribute('aria-label','Текст кадра '+(i+1));
+  t.addEventListener('input',function(){s.text=t.value;show(i)});
+  right.appendChild(t);top.appendChild(th);top.appendChild(right);c.appendChild(top);
+  if(!s.img){
+   var sw=el('div','sw');
+   COLORS.forEach(function(col){
+    var b=el('button',s.bg===col?'on':'');b.style.background=col;b.setAttribute('aria-label','Цвет заставки');
+    b.addEventListener('click',function(){s.bg=col;list();show(i)});sw.appendChild(b);
+   });
+   c.appendChild(sw);
+  }
+  var tools=el('div','tools'),st=el('div','step');
+  var minus=el('button','','−'),plus=el('button','','+'),val=el('b','',s.d.toFixed(1)+' с');
+  minus.setAttribute('aria-label','Короче');plus.setAttribute('aria-label','Длиннее');
+  minus.addEventListener('click',function(){s.d=Math.max(1.5,s.d-0.5);val.textContent=s.d.toFixed(1)+' с';updTotal()});
+  plus.addEventListener('click',function(){s.d=Math.min(20,s.d+0.5);val.textContent=s.d.toFixed(1)+' с';updTotal()});
+  st.appendChild(minus);st.appendChild(val);st.appendChild(plus);tools.appendChild(st);
+  var up=el('button','','↑'),dn=el('button','','↓'),ad=el('button','','+ Заставка после'),rm=el('button','','Убрать');
+  up.setAttribute('aria-label','Выше');dn.setAttribute('aria-label','Ниже');
+  up.disabled=i===0;dn.disabled=i===slides.length-1;rm.style.color='var(--danger)';
+  up.addEventListener('click',function(){move(i,-1)});dn.addEventListener('click',function(){move(i,1)});
+  ad.addEventListener('click',function(){addTitle(i+1)});
+  rm.addEventListener('click',function(){slides.splice(i,1);sel=Math.max(0,Math.min(sel,slides.length-1));list();show(sel);updTotal()});
+  tools.appendChild(up);tools.appendChild(dn);tools.appendChild(ad);tools.appendChild(rm);
+  c.appendChild(tools);l.appendChild(c);
+ });
+}
+function move(i,d){
+ var j=i+d;if(j<0||j>=slides.length)return;
+ var x=slides[i];slides[i]=slides[j];slides[j]=x;sel=j;list();show(j);
+}
+function addTitle(pos){
+ var s={bg:COLORS[slides.length%COLORS.length],text:'Заголовок',d:3};
+ if(pos===undefined)pos=slides.length;
+ slides.splice(pos,0,s);sel=pos;list();show(pos);updTotal();
+}
+$('addText').addEventListener('click',function(){addTitle()});
+
+/* ---------- фото ---------- */
+function loadPhoto(f){
+ return new Promise(function(res){
+  var url=URL.createObjectURL(f),im=new Image();
+  im.onload=function(){
+   var m=1600,r=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');
+   c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);
+   c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+   var tc=document.createElement('canvas'),tr=128/Math.max(c.width,c.height);
+   tc.width=Math.round(c.width*tr);tc.height=Math.round(c.height*tr);
+   tc.getContext('2d').drawImage(c,0,0,tc.width,tc.height);
+   URL.revokeObjectURL(url);
+   res({img:c,thumb:tc.toDataURL('image/jpeg',0.7),text:'',d:defDur()});
+  };
+  im.onerror=function(){URL.revokeObjectURL(url);res(null)};
+  im.src=url;
+ });
+}
+$('file').addEventListener('change',async function(e){
+ var files=Array.prototype.slice.call(e.target.files);e.target.value='';
+ if(!files.length)return;
+ say('Загружаю фото…');var bad=0;
+ for(var k=0;k<files.length;k++){
+  var s=await loadPhoto(files[k]);
+  if(s)slides.push(s);else bad++;
+ }
+ sel=Math.max(0,slides.length-1);list();show(sel);updTotal();
+ say(bad?'Не удалось открыть фото: '+bad+'. Если это снимки HEIC, сохрани их как JPG или PNG и попробуй снова.':'Добавлено фото: '+(files.length-bad));
+});
+
+/* ---------- настройки ---------- */
+function setSize(){
+ var sh=+$('res').value,lg=Math.round(sh*16/9/2)*2;
+ if($('fmt').value==='p'){cv.width=sh;cv.height=lg}else{cv.width=lg;cv.height=sh}
+ show(sel);
+}
+$('fmt').addEventListener('change',setSize);
+$('res').addEventListener('change',setSize);
+function bps(){return +$('qual').value||5000000}
+$('trans').addEventListener('change',function(){updTotal()});
+$('tlen').addEventListener('change',function(){updTotal()});
+$('applyAll').addEventListener('click',function(){var d=defDur();slides.forEach(function(s){s.d=d});list();show(sel);updTotal()});
+$('music').addEventListener('change',function(e){
+ var f=e.target.files[0];if(!f)return;
+ if(audioEl)audioEl.pause();
+ audioEl=new Audio(URL.createObjectURL(f));audioEl.loop=true;audioEl.volume=+$('vol').value;
+ actx=null;adest=null;gain=null;say('Музыка добавлена: '+f.name);
+});
+$('vol').addEventListener('input',function(){var v=+this.value;if(gain)gain.gain.value=v;else if(audioEl)audioEl.volume=v});
+$('noMusic').addEventListener('click',function(){
+ if(audioEl)audioEl.pause();audioEl=null;actx=null;adest=null;gain=null;$('music').value='';say('Музыка убрана');
+});
+
+/* ---------- воспроизведение ---------- */
+var MIMES=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+function pickMime(){
+ if(typeof MediaRecorder==='undefined')return '';
+ for(var m=0;m<MIMES.length;m++){try{if(MediaRecorder.isTypeSupported(MIMES[m]))return MIMES[m]}catch(e){}}
+ return '';
+}
+(function(){
+ var m=pickMime();
+ $('fmtnote').textContent=!m?'Этот браузер не умеет записывать видео. Открой страницу в Chrome.':
+  m.indexOf('mp4')>-1?'Видео сохранится как MP4.':'Этот браузер записывает только WebM, поэтому видео сохранится как WebM. Он открывается на Android, но не везде в соцсетях.';
+})();
+function run(withAudio,onEnd){
+ var tm=timing(),t0=performance.now();stopReq=false;
+ if(withAudio&&audioEl){try{audioEl.currentTime=0;audioEl.play()}catch(e){}}
+ function tick(now){
+  var t=(now-t0)/1000;
+  if(stopReq||t>=tm.total){
+   frameAt(Math.min(t,tm.total));if(audioEl)audioEl.pause();
+   $('pbar').style.width=stopReq?'0':'100%';onEnd(!stopReq);return;
+  }
+  frameAt(t);$('pbar').style.width=(t/tm.total*100)+'%';$('tcur').textContent=fmtT(t);
+  raf=requestAnimationFrame(tick);
+ }
+ raf=requestAnimationFrame(tick);
+}
+$('play').addEventListener('click',function(){
+ if(busy){stopReq=true;return}
+ if(!slides.length){say('Сначала добавь кадры');return}
+ busy=true;$('play').textContent='Стоп';$('rec').disabled=true;say('');
+ run(true,function(){busy=false;$('play').textContent='Смотреть';$('rec').disabled=false;show(sel)});
+});
+
+/* ---------- экспорт ---------- */
+$('rec').addEventListener('click',async function(){
+ if(busy)return;
+ if(!slides.length){say('Сначала добавь кадры');return}
+ var mime=pickMime();
+ if(!mime||!cv.captureStream){say('Этот браузер не умеет записывать видео. Открой страницу в Chrome.');return}
+ var dl=null;try{dl=await claude.use('downloads')}catch(e){}
+ if(!dl){dl={save:function(o){return new Promise(function(res){var a=document.createElement('a');a.href=URL.createObjectURL(o.data);a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);res({status:'saved'})})}}}
+ if(!dl){say('Сохранение недоступно в этом окне. Открой страницу через приложение Claude.');return}
+ busy=true;$('rec').disabled=true;$('play').disabled=true;
+ var wl=null;try{if(navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}
+ var stream=cv.captureStream(30);
+ if(audioEl){
+  try{
+   if(!actx){
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    var src=actx.createMediaElementSource(audioEl);gain=actx.createGain();gain.gain.value=+$('vol').value;
+    adest=actx.createMediaStreamDestination();src.connect(gain);gain.connect(adest);
+   }
+   if(actx.state==='suspended')await actx.resume();
+   adest.stream.getAudioTracks().forEach(function(tr){stream.addTrack(tr)});
+  }catch(e){}
+ }
+ var rec,chunks=[];
+ function fin(){busy=false;$('rec').disabled=false;$('play').disabled=false;if(wl){try{wl.release()}catch(e){}}}
+ try{rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:bps()})}
+ catch(e){say('Не удалось начать запись');fin();return}
+ rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+ rec.onstop=async function(){
+  var type=rec.mimeType||mime,ext=type.indexOf('mp4')>-1?'mp4':'webm';
+  var blob=new Blob(chunks,{type:type});fin();
+  if(!blob.size){say('Запись получилась пустой, попробуй ещё раз');return}
+  try{await dl.save({filename:'moe-video.'+ext,data:blob});say('Видео сохранено ('+ext.toUpperCase()+')')}
+  catch(e){say(e&&e.code==='declined'?'Сохранение отменено':'Не удалось сохранить видео')}
+ };
+ say('Идёт запись, не закрывай страницу и не блокируй экран…');
+ rec.start(500);
+ run(true,function(ok){setTimeout(function(){if(rec.state!=='inactive')rec.stop()},400)});
+});
+
+/* ---------- видео по запросу и картинке ---------- */
+$('makeImg').addEventListener('click',async function(){
+ var f=$('refimg').files[0];
+ if(!f){say('Сначала выбери исходное изображение');return}
+ say('Собираю видео…');
+ var s=await loadPhoto(f);
+ if(!s){say('Не удалось открыть изображение');return}
+ s.d=Math.max(3,Math.min(30,+$('len').value||8));
+ if($('showReq').checked)s.text=$('req').value;
+ slides.push(s);sel=slides.length-1;list();show(sel);updTotal();
+ say('Добавлено в кадры. Нажми «Смотреть» или «Сохранить видео».');
+});
+$('copyReq').addEventListener('click',function(e){
+ var b=e.target,old=b.textContent,sh=$('res').value+'p';
+ var q=$('qual').options[$('qual').selectedIndex].text.toLowerCase();
+ var txt='Запрос: '+($('req').value||'(не заполнен)')+'\nИсходное изображение: приложить своё фото\nРазрешение: '+sh+', '+($('fmt').value==='p'?'вертикальное 9:16':'горизонтальное 16:9')+'\nЧёткость: '+q+'\nДлина: '+($('len').value||8)+' секунд';
+ function ok(){b.textContent='Скопировано';setTimeout(function(){b.textContent=old},1500)}
+ function fb(){var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(x){say('Выдели текст и скопируй вручную')}document.body.removeChild(ta)}
+ try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(x){fb()}
+});
+
+list();show(0);
+})();
+</script>
+</body>
+</html>
